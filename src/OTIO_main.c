@@ -7,7 +7,7 @@
 
 
 #ifdef OTIO_DEBUG_MODE
-char *otio_object_type_names[ORIO_OT_COUNT] = {"ORIO_OT_TRACK", "ORIO_OT_SEQUENCE", "ORIO_OT_CLIP", "ORIO_OT_FILLER", "ORIO_OT_TRANSITION", "ORIO_OT_EFFECT", "ORIO_OT_MARKER", "ORIO_OT_MEDIA_REFFERENCE"};
+static char *otio_object_type_names[ORIO_OT_COUNT] = {"ORIO_OT_TRACK", "ORIO_OT_SEQUENCE", "ORIO_OT_CLIP", "ORIO_OT_FILLER", "ORIO_OT_TRANSITION", "ORIO_OT_EFFECT", "ORIO_OT_MARKER", "ORIO_OT_MEDIA_REFFERENCE"};
 #endif
 
 char *otio_text_allocate(char *string) 
@@ -99,6 +99,8 @@ OTIOHeader *otio_object_create(OTIOObjectType type, char *name)
 			media_reference->available_range.time_value = 0;
 		}
 		break;
+        case ORIO_OT_COUNT:
+        break;
 	}
 	object->name = otio_text_allocate(name);
 	object->parent = NULL;
@@ -211,7 +213,7 @@ void *otio_object_list_lookup(OTIOList *list, uint id)
 	}else
 	{
 		i = list->count - 1;
-		for(header = list->last; i > id; header = header->prev);
+		for(header = list->last; i > id; header = header->prev)
 			i--;
 		return header;
 	}
@@ -379,7 +381,7 @@ void otio_object_insert_after(OTIOHeader *parent, OTIOHeader *object, OTIOHeader
 	}
 }
 
-extern void otio_object_free(void *object);
+extern void otio_object_free(OTIOHeader *object);
 
 void otio_object_list_free(OTIOList *list) /* free an object, and its children. if an object is attached to a a parrent it will be detached automaticaly. */
 {
@@ -431,6 +433,8 @@ void otio_object_free(OTIOHeader *object) /* free an object, and its children. i
 				free(media_reference->uri);
 		}
 		break;
+        case ORIO_OT_COUNT:
+        break;
 	}
 	free(object);
 }
@@ -760,6 +764,8 @@ OTIOHeader *otio_object_clone(OTIOHeader *object, uint recursively)
 			mr_old->available_range = mr_new->available_range;
 		}
 		break;
+        case ORIO_OT_COUNT:
+        break;
 	}
 	return clone;
 }

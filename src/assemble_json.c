@@ -168,7 +168,7 @@ uint assemble_json_parse_value(AJsonValue *value, char *string, uint8 **memory)
 			pos += i;
 		}else
 		{
-			value->data.string = *memory;
+			value->data.string = (char*)*memory;
 			for(i = 0; string[pos] != '"';)
 			{
 				if(string[pos] == '\\')
@@ -237,7 +237,7 @@ uint assemble_json_parse_object(void **link, char *string, uint8 **memory)
 				prev = obj;
 				obj->value.type = A_JT_NULL | ASSEMBLE_JSON_WRITE_PROTECTED;
 				i++;
-				obj->name = *memory;
+				obj->name = (char*)*memory;
 				for(j = 0; string[i] != '"';)
 				{
 					if(string[i] == '\\')
@@ -369,6 +369,8 @@ void assemble_json_clone_internal(AJsonValue *from_value, AJsonValue *to_value)
 		break;
 		case A_JT_NULL :
 		break;
+        case A_JT_COUNT :
+        break;
 	}
 }
 
@@ -615,9 +617,9 @@ AJsonValue *assemble_json_parse(char *string, int write_protected)
 	{
 		uint pos; 
 		uint8 *array;
-		pos = assemble_json_print_size(memory, 0);
+		pos = assemble_json_print_size((AJsonValue *)memory, 0);
 		array = malloc(pos + 1);
-		assemble_json_print(array, memory, 0);
+		assemble_json_print((char*)array, (AJsonValue *)memory, 0);
 		array[pos] = 0;
 		printf("%s", array);
 		free(array);	

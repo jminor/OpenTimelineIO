@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "OpenTimelineIo.h"
+#include "OpenTimelineIO.h"
 
 
 
@@ -58,16 +58,18 @@ void otio_generate_random(OTIOObject *parent, uint recursions, uint count, uint 
 				time.time_value = (*seed) % 32;
 				(*seed)++;
 				otio_marker_time_set(object, time);
-				otio_marker_message_set(object, "Awsome stuff!");
+				otio_marker_message_set(object, "Awesome stuff!");
 			break;
 			case ORIO_OT_MEDIA_REFFERENCE :
 				otio_media_reference_kind_set(object, "main");
 				{
 					char file[256];
-					sprintf(file, "./scene_%s.mov", *seed);
+					sprintf(file, "./scene_%d.mov", *seed);
 					otio_media_reference_uri_set(object, file);
 				}
 			break;
+            case ORIO_OT_COUNT :
+            break;
 		}
 	}
 }

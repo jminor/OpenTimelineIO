@@ -45,7 +45,7 @@ void otio_save_list(FILE *f, OTIOObject *child, char *tabs, uint indentation, ch
 		child = otio_object_next_get(child);
 		while(child != NULL)
 		{
-			fprintf(f, ",\n", tabs);
+			fprintf(f, ",\n");
 			otio_save_node(f, child, indentation + 2);
 			child = otio_object_next_get(child);
 		}
@@ -76,7 +76,7 @@ void otio_save_node(FILE *f, OTIOObject *object, uint indentation)
 	fprintf(f, "%s{\n", tabs);
 	fprintf(f, "%s\t\"OTIO_SCHEMA\" : \"%s.%u\"", tabs, otio_io_schema_names[type], 1);
 	fprintf(f, ",\n%s\t\"name\" : \"%s\"", tabs, otio_io_schema_names[otio_object_type_get(object)]);
-	fprintf(f, ",\n%s\t\"metadata\" : []", tabs);
+	fprintf(f, ",\n%s\t\"metadata\" : {}", tabs);
 	if(type < ORIO_OT_COMPOSABLE_END)
 	{
 		if(type != ORIO_OT_TRANSITION)
@@ -135,6 +135,8 @@ void otio_save_node(FILE *f, OTIOObject *object, uint indentation)
 			if(text != NULL)
 				fprintf(f, ",\n%s\t\"uri\" : \"%s\"", tabs, text);
 		break;
+        case ORIO_OT_COUNT :
+        break;
 	}
 	fprintf(f, "\n%s}", tabs);
 }

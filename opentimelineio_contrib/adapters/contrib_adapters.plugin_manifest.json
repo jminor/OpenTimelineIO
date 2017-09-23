@@ -42,6 +42,14 @@
             "execution_scope" : "in process",
             "filepath" : "advanced_authoring_format.py",
             "suffixes" : ["aaf"]
+        },
+        {
+            "OTIO_SCHEMA" : "Adapter.1",
+            "name" : "imf_cpl",
+            "execution_scope" : "in process",
+            "filepath" : "imf_cpl.py",
+            "suffixes" : [],
+            "comment" : "No suffix for now, since XML conflicts with FCPXML"
         }
     ]
 }

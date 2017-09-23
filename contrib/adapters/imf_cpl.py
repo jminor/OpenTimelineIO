@@ -29,14 +29,15 @@
 # http://www.smpte-ra.org/schemas/2067-3/2016
 # http://ieeexplore.ieee.org/document/7560854/
 
-import opentimelineio as otio
-
 import uuid
 
 
 def write_to_string(input_otio):
-    
-    header = input_otio.metadata.get("imf_cpl",{})
+
+    header = input_otio.metadata.get("imf_cpl", {})
+
+    # Let's take the easy road and just make the XML as a string.
+    # We will build it up in parts as we go.
 
     output = """<?xml version="1.0" encoding="UTF-8" ?>
 <CompositionPlaylist xmlns="http://www.smpte-ra.org/schemas/2067-3/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -57,59 +58,72 @@ def write_to_string(input_otio):
 """.format(
         my_uuid=uuid.uuid4(),
         content_uuid=uuid.uuid4(),
-        annotation=header.get("annotation", ""),
-        issue_date="2017-04-13T23:09:36-00:00",
-        issuer=header.get("issuer", "Unknown Issuer"),
+        annotation=header.get(
+            "annotation",
+            ""),
+        issue_date="2017-04-13T23:09:36-00:00",  # TODO: Needs real date
+        issuer=header.get(
+            "issuer",
+            "Unknown Issuer"),
         content_originator=header.get(
             "content_originator",
             "Unknown Content Originator"),
         content_title=input_otio.name,
-        content_kind=header.get("content_kind", "feature"),
-        label_text=header.get("label_text", "No Label")
+        content_kind=header.get(
+            "content_kind",
+            "feature"),
+        label_text=header.get(
+            "label_text",
+            "No Label")
         )
+    # TODO: Are the default values above reasonable?
 
     # TODO: EssenceDescriptorList with
     # TODO: EssenceDescriptor stuff from MXF via XMLREG
 
     output += """
-	<CompositionTimecode>
-		<TimecodeDropFrame>0</TimecodeDropFrame>
-		<TimecodeRate>24</TimecodeRate>
-		<TimecodeStartAddress>00:00:00:00</TimecodeStartAddress>
-	</CompositionTimecode>
-	<EditRate>24000 1001</EditRate>
-	<LocaleList>
-		<Locale>
-			<Annotation>???</Annotation>
-			<LanguageList>
-				<Language>en</Language>
-			</LanguageList>
-			<RegionList>
-				<Region>001</Region>
-			</RegionList>
-			<ContentMaturityRatingList>
-				<ContentMaturityRating>
-					<Agency>http://www.mpaa.org/2003-ratings</Agency>
-					<Rating>???</Rating>
-				</ContentMaturityRating>
-			</ContentMaturityRatingList>
-		</Locale>
-	</LocaleList>
-	<ExtensionProperties>
-		<cc:ApplicationIdentification xmlns:cc="http://www.smpte-ra.org/schemas/2067-2/2016">http://www.smpte-ra.org/schemas/2067-21/2016</cc:ApplicationIdentification>
-	</ExtensionProperties>
+    <CompositionTimecode>
+        <TimecodeDropFrame>0</TimecodeDropFrame>
+        <TimecodeRate>24</TimecodeRate>
+        <TimecodeStartAddress>00:00:00:00</TimecodeStartAddress>
+    </CompositionTimecode>
+    <EditRate>24000 1001</EditRate>
+    <LocaleList>
+        <Locale>
+            <Annotation>???</Annotation>
+            <LanguageList>
+                <Language>en</Language>
+            </LanguageList>
+            <RegionList>
+                <Region>001</Region>
+            </RegionList>
+            <ContentMaturityRatingList>
+                <ContentMaturityRating>
+                    <Agency>http://www.mpaa.org/2003-ratings</Agency>
+                    <Rating>???</Rating>
+                </ContentMaturityRating>
+            </ContentMaturityRatingList>
+        </Locale>
+    </LocaleList>
+    <ExtensionProperties>
+        <cc:ApplicationIdentification xmlns:cc="http://www.smpte-ra.org/schemas/2067-2/2016">http://www.smpte-ra.org/schemas/2067-21/2016</cc:ApplicationIdentification>
+    </ExtensionProperties>
 """
     # TODO: Replace values in the XML above...
 
+    # We're assuming there's just one MainImageSequence.
+    # TODO: Iterate over the timeline's tracks, emitting a sequence for
+    # each one (video and audio).
+
     output += """
-	<SegmentList>
-		<Segment>
-			<Id>urn:uuid:{segment_uuid}</Id>
-			<SequenceList>
-				<cc:MainImageSequence xmlns:cc="http://www.smpte-ra.org/schemas/2067-2/2016">
-					<Id>urn:uuid:{main_seq_uuid}</Id>
-					<TrackId>urn:uuid:{track_uuid}</TrackId>
-					<ResourceList>
+    <SegmentList>
+        <Segment>
+            <Id>urn:uuid:{segment_uuid}</Id>
+            <SequenceList>
+                <cc:MainImageSequence xmlns:cc="http://www.smpte-ra.org/schemas/2067-2/2016">
+                    <Id>urn:uuid:{main_seq_uuid}</Id>
+                    <TrackId>urn:uuid:{track_uuid}</TrackId>
+                    <ResourceList>
 """.format(
     segment_uuid=uuid.uuid4(),
     main_seq_uuid=uuid.uuid4(),
@@ -117,24 +131,28 @@ def write_to_string(input_otio):
 )
 
     for clip in input_otio.each_clip():
-        
-        clip_metadata = clip.metadata.get("imf_cpl",{})
-        
-        intrinsic_duration = clip.duration().value # MXF duration
+
+        clip_metadata = clip.metadata.get("imf_cpl", {})
+
+        # TODO: Use available_range of the MXF
+        intrinsic_duration = clip.duration().value
+        # TODO: Use source_range.start_time
         entry = 0
-        source_duration = clip.duration().value # actually play this
+        # TODO: Use source_range.duration
+        source_duration = clip.duration().value
+        # TODO: Compute this from rate
         edit_rate = "24000 1001"
-        
+
         output += """
-						<Resource xsi:type="TrackFileResourceType">
-							<Id>urn:uuid:{clip_uuid}</Id>
-							<EditRate>{edit_rate}</EditRate>
-							<Entry>{entry}</Entry>
-							<IntrinsicDuration>{intrinsic_duration}</IntrinsicDuration>
-							<SourceDuration>{source_duration}</SourceDuration>
-							<SourceEncoding>urn:uuid:{source_uuid}</SourceEncoding>
-							<TrackFileId>urn:uuid:{track_uuid}</TrackFileId>
-						</Resource>
+                        <Resource xsi:type="TrackFileResourceType">
+                            <Id>urn:uuid:{clip_uuid}</Id>
+                            <EditRate>{edit_rate}</EditRate>
+                            <Entry>{entry}</Entry>
+                            <IntrinsicDuration>{intrinsic_duration}</IntrinsicDuration>
+                            <SourceDuration>{source_duration}</SourceDuration>
+                            <SourceEncoding>urn:uuid:{source_uuid}</SourceEncoding>
+                            <TrackFileId>urn:uuid:{track_uuid}</TrackFileId>
+                        </Resource>
 """.format(
     clip_uuid=uuid.uuid4(),
     source_uuid=clip_metadata.get("source_uuid", "MISSING UUID for "+clip.name),
@@ -146,14 +164,12 @@ def write_to_string(input_otio):
 )
 
     output += """
-					</ResourceList>
-				</cc:MainImageSequence>
-			</SequenceList>
-		</Segment>
-	</SegmentList>
+                    </ResourceList>
+                </cc:MainImageSequence>
+            </SequenceList>
+        </Segment>
+    </SegmentList>
 </CompositionPlaylist>
 """
 
-
     return output
-    

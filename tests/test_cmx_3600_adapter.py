@@ -385,6 +385,86 @@ class EDLAdapterTest(unittest.TestCase):
             '* FROM FILE: S:\\var\\tmp\\test.exr\n'
         )
 
+    def test_nucoda_edl_write_with_transition(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline(
+            "CrossDissolve_Day-Night_Long_1 from CZuber",
+            tracks=[track]
+        )
+
+        cl = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel1'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(131.0, 24.0),
+                duration=otio.opentime.RationalTime(102.0, 24.0)
+            )
+        )
+        trans = otio.schema.Transition(
+            in_offset=otio.opentime.RationalTime(57.0, 24.0),
+            out_offset=otio.opentime.RationalTime(43.0, 24.0)
+        )
+        cl2 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel2'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(280.0, 24.0),
+                duration=otio.opentime.RationalTime(143.0, 24.0)
+            )
+        )
+        cl3 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel3'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(0.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
+        )
+        tl.tracks[0].extend([cl, trans, cl2, cl3])
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        expected = \
+            'TITLE: CrossDissolve_Day-Night_Long_1 from CZuber\n\n' \
+            '001  Reel1    V     C        00:00:05:11 00:00:07:08 ' \
+            '00:00:00:00 00:00:01:21\n' \
+            '002  Reel1    V     C        00:00:07:08 00:00:07:08 ' \
+            '00:00:01:21 00:00:01:21\n' \
+            '002  Reel2    V     D 100    00:00:09:07 00:00:17:15 ' \
+            '00:00:01:21 00:00:10:05\n' \
+            '003  Reel3    V     C        00:00:00:00 00:00:01:00 ' \
+            '00:00:10:05 00:00:11:05\n'
+
+        self.assertEqual(result, expected)
+
+    def test_custom_reel_names(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline(tracks=[track])
+        tr = otio.opentime.TimeRange(
+            start_time=otio.opentime.RationalTime(1.0, 24.0),
+            duration=otio.opentime.RationalTime(24.0, 24.0)
+        )
+        cl = otio.schema.Clip(
+            source_range=tr
+        )
+        cl.metadata['cmx_3600'] = {
+            'reel': 'v330_21f'
+        }
+        tl.tracks[0].append(cl)
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        self.assertEqual(
+            result,
+            '001  v330_21f V     C        '
+            '00:00:00:01 00:00:01:01 00:00:00:00 00:00:01:00\n'
+        )
+
     def test_mixed_avid_nucoda_read_raises_exception(self):
         with self.assertRaises(cmx_3600.EDLParseError):
             otio.adapters.read_from_string(

@@ -119,10 +119,13 @@ def _parsed_args():
         help='compare two input timelines'
     )
     parser.add_argument(
-        '--edl_rate',
-        type=float,
-        default=24,
-        help='frame rate used when importing an EDL'
+        '-a',
+        '--adapter_arg',
+        nargs='+',
+        default=[],
+        action='append',
+        type=str,
+        help='specify an adapter-specific option as key=value (for example -a rate=30)'
     )
     parser.add_argument(
         '--unlink',
@@ -169,12 +172,12 @@ def main():
     # Read all the inputs
 
     timelines = []
+    adapter_args = {}
+    for arg in args.adapter_arg:
+        key, value = arg[0].split('=', 1)
+        adapter_args[key] = value
     for input_path in args.inputs:
-        if input_path.lower().endswith(".edl"):
-            kwargs = {'rate': args.edl_rate}
-        else:
-            kwargs = {}
-        timeline = otio.adapters.read_from_file(input_path, **kwargs)
+        timeline = otio.adapters.read_from_file(input_path, **adapter_args)
         timelines.append(timeline)
 
     # Combine them

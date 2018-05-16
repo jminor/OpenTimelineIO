@@ -31,6 +31,7 @@ import sys
 import argparse
 import subprocess
 import tempfile
+import ast
 try:
     from urllib2 import urlopen
 except ImportError:
@@ -174,8 +175,14 @@ def main():
     timelines = []
     adapter_args = {}
     for arg in args.adapter_arg:
-        key, value = arg[0].split('=', 1)
-        adapter_args[key] = value
+        key, val = arg[0].split('=', 1)
+        try:
+            # Sometimes we need to pass a bool, int, list, etc.
+            parsed_value = ast.literal_eval(val)
+        except (ValueError, SyntaxError):
+            # Fall back to a simple string
+            parsed_value = val
+        adapter_args[key] = parsed_value
     for input_path in args.inputs:
         timeline = otio.adapters.read_from_file(input_path, **adapter_args)
         timelines.append(timeline)

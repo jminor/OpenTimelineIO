@@ -1,12 +1,12 @@
 {
-    "OTIO_SCHEMA": "Timeline.1", 
-    "metadata": {}, 
-    "name": "transition_test", 
+    "OTIO_SCHEMA": "Timeline.1",
+    "metadata": {},
+    "name": "transition_test",
     "tracks": {
-        "OTIO_SCHEMA": "Stack.1", 
+        "OTIO_SCHEMA": "Stack.1",
         "children": [
             {
-                "OTIO_SCHEMA": "Track.1", 
+                "OTIO_SCHEMA": "Track.1",
                 "children": [
                     {
                         "OTIO_SCHEMA": "Transition.1",
@@ -26,22 +26,22 @@
                         }
                     },
                     {
-                        "OTIO_SCHEMA": "Clip.1", 
-                        "effects": [], 
-                        "markers": [], 
-                        "media_reference": null, 
-                        "metadata": {}, 
-                        "name": "A", 
+                        "OTIO_SCHEMA": "Clip.1",
+                        "effects": [],
+                        "markers": [],
+                        "media_reference": null,
+                        "metadata": {},
+                        "name": "A",
                         "source_range": {
-                            "OTIO_SCHEMA": "TimeRange.1", 
+                            "OTIO_SCHEMA": "TimeRange.1",
                             "duration": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 50
-                            }, 
+                            },
                             "start_time": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 0.0
                             }
                         }
@@ -65,44 +65,44 @@
                         }
                     },
                     {
-                        "OTIO_SCHEMA": "Clip.1", 
-                        "effects": [], 
-                        "markers": [], 
-                        "media_reference": null, 
-                        "metadata": {}, 
-                        "name": "B", 
+                        "OTIO_SCHEMA": "Clip.1",
+                        "effects": [],
+                        "markers": [],
+                        "media_reference": null,
+                        "metadata": {},
+                        "name": "B",
                         "source_range": {
-                            "OTIO_SCHEMA": "TimeRange.1", 
+                            "OTIO_SCHEMA": "TimeRange.1",
                             "duration": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 50
-                            }, 
+                            },
                             "start_time": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 0.0
                             }
                         }
 
                     },
                     {
-                        "OTIO_SCHEMA": "Clip.1", 
-                        "effects": [], 
-                        "markers": [], 
-                        "media_reference": null, 
-                        "metadata": {}, 
-                        "name": "C", 
+                        "OTIO_SCHEMA": "Clip.1",
+                        "effects": [],
+                        "markers": [],
+                        "media_reference": null,
+                        "metadata": {},
+                        "name": "C",
                         "source_range": {
-                            "OTIO_SCHEMA": "TimeRange.1", 
+                            "OTIO_SCHEMA": "TimeRange.1",
                             "duration": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 50
-                            }, 
+                            },
                             "start_time": {
-                                "OTIO_SCHEMA": "RationalTime.1", 
-                                "rate": 24, 
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24,
                                 "value": 0.0
                             }
                         }
@@ -125,20 +125,20 @@
                             "value" : 10
                         }
                     }
-                    
-                ], 
-                "effects": [], 
-                "kind": "Video", 
-                "markers": [], 
-                "metadata": {}, 
-                "name": "Sequence1", 
+
+                ],
+                "effects": [],
+                "kind": "Video",
+                "markers": [],
+                "metadata": {},
+                "name": "Sequence1",
                 "source_range": null
             }
-        ], 
-        "effects": [], 
-        "markers": [], 
-        "metadata": {}, 
-        "name": "tracks", 
+        ],
+        "effects": [],
+        "markers": [],
+        "metadata": {},
+        "name": "tracks",
         "source_range": null
     }
 }

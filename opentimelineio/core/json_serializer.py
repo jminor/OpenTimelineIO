@@ -63,7 +63,8 @@ def serialize_json_to_string(root, sort_keys=True, indent=4):
 
     return _SerializableObjectEncoder(
         sort_keys=sort_keys,
-        indent=indent
+        indent=indent,
+        separators=(',', ': ')  # this avoids trailing spaces
     ).encode(root)
 
 

@@ -29,6 +29,7 @@
 import unittest
 import subprocess
 import os
+import re
 
 OTIOTOOL_PATH = os.path.join(os.path.dirname(__file__), "../bin/otiotool.py")
 SAMPLE_DATA_DIR = os.path.join(os.path.dirname(__file__), "sample_data")
@@ -64,11 +65,18 @@ class TestOTIOTool(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
+        def _strip_names(text):
+            return re.sub(r'"name": ".*"', '"name": "skipped..."', text)
+
         expected = open(PREFLATTENED_EXAMPLE_PATH).read()
         stdout, stderr = proc.communicate()
         self.maxDiff = None
         self.assertMultiLineEqual("", stderr)
-        self.assertMultiLineEqual(expected, stdout)
+        self.assertMultiLineEqual(
+            _strip_names(expected),
+            _strip_names(stdout)
+        )
 
 
 if __name__ == '__main__':

@@ -126,7 +126,8 @@ def _parsed_args():
         default=[],
         action='append',
         type=str,
-        help='specify an adapter-specific option as key=value (for example -a rate=30)'
+        help='specify an adapter-specific option as key=value '
+             '(for example -a rate=30)'
     )
     parser.add_argument(
         '--unlink',

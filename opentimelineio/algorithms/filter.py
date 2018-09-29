@@ -93,7 +93,7 @@ def filtered_composition(
     EXAMPLE 4 (prune gaps):
         track :: [Gap, A, Gap]
             filtered_composition(
-                track, lambda a:a, types_to_prune=(otio.schema.Gap,)) => [A]
+                track, lambda _:_, types_to_prune=(otio.schema.Gap,)) => [A]
     """
 
     # deep copy everything

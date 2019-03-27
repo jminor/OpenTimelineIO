@@ -87,3 +87,7 @@ class CannotTrimTransitionsError(OTIOError):
 
 class NoDefaultMediaLinkerError(OTIOError):
     pass
+
+
+class ValidationError(OTIOError):
+    pass

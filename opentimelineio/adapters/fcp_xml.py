@@ -919,7 +919,7 @@ def _build_collection(collection, br_map):
 # adapter requirements
 # --------------------
 
-def read_from_string(input_str):
+def read_from_string(input_str, validate=True):
     tree = cElementTree.fromstring(input_str)
 
     # element_map encodes the backreference context
@@ -929,11 +929,38 @@ def read_from_string(input_str):
     top_level_tracks = _get_top_level_tracks(tree)
 
     if len(top_level_tracks) == 1:
-        return _parse_timeline(top_level_tracks[0], element_map)
+        result = _parse_timeline(top_level_tracks[0], element_map)
     elif len(top_level_tracks) > 1:
-        return _parse_collection(top_level_tracks, element_map)
+        result =  _parse_collection(top_level_tracks, element_map)
     else:
         raise ValueError('No top-level tracks found')
+    
+    if validate:
+        _validate(result)
+
+    return result
+
+
+def _validate(result):
+    # Is result a Timeline itself?
+    if isinstance(result, otio.schema.Timeline):
+        _validate_timeline(result)
+    
+    # If result is a SerializableCollection, then there are probably
+    # Timelines inside it.
+    for timeline in result.each_child(descended_from_type=otio.schema.Timeline):
+        _validate_timeline(timeline)
+
+
+def _validate_timeline(timeline):
+    # Make sure the track lengths all match
+    duration = timeline.duration()
+    for track in timeline.tracks:
+        if track.duration() != duration:
+            raise otio.exceptions.ValidationError(
+                "Track lengths don't match"
+                " - use validate=False to diagnose in more detail."
+            )
 
 
 def write_to_string(input_otio):

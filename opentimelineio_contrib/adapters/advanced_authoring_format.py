@@ -871,7 +871,7 @@ def _contains_something_valuable(thing):
     return True
 
 
-def read_from_file(filepath, simplify=True):
+def read_from_file(filepath, simplify=True, validate=True):
 
     with aaf2.open(filepath) as aaf_file:
 
@@ -903,7 +903,32 @@ def read_from_file(filepath, simplify=True):
     # may change during simplification.
     _fix_transitions(result)
 
+    if validate:
+        _validate(result)
+
     return result
+
+
+def _validate(result):
+    # Is result a Timeline itself?
+    if isinstance(result, otio.schema.Timeline):
+        _validate_timeline(result)
+    
+    # If result is a SerializableCollection, then there are probably
+    # Timelines inside it.
+    for timeline in result.each_child(descended_from_type=otio.schema.Timeline):
+        _validate_timeline(timeline)
+
+
+def _validate_timeline(timeline):
+    # Make sure the track lengths all match
+    duration = timeline.duration()
+    for track in timeline.tracks:
+        if track.duration() != duration:
+            raise otio.exceptions.ValidationError(
+                "Track lengths don't match"
+                " - use validate=False to diagnose in more detail."
+            )
 
 
 def write_to_file(input_otio, filepath):

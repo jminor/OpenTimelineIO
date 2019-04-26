@@ -581,35 +581,60 @@ def _transcribe_fancy_timewarp(item, parameters):
     effect.effect_name = None  # Unsupported
     effect.name = item.get("Name")
 
+    # self._debug_time_effect(item, parameters)
+
+    # An AAF time warp effect can be an arbitrary graph
+    # with linear, cubic, or bezier knots (other types too?)
+    # and can remap time forwards, backwards, in loops, etc.
+    # Rather than trying to capture all that complexity, lets
+    # just get a lookup table that maps output frames to input
+    # frames.
+    offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
+    if offset_map:
+    lookup_table = []
+    for i in range(item.length):
+        lookup_table.append(int(offset_map.value_at(i)))
+    effect.metadata["AAF"] = {
+        "frame_remapping": lookup_table
+    }
+    else:
+        pass
+
     return effect
 
+
+def _debug_time_effect(item, parameters):
     # TODO: Here is some sample code that pulls out the full
     # details of a non-linear speed map.
 
-    # speed_map = item.parameter['PARAM_SPEED_MAP_U']
-    # offset_map = item.parameter['PARAM_SPEED_OFFSET_MAP_U']
+    speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
+    offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
     # Also? PARAM_OFFSET_MAP_U (without the word "SPEED" in it?)
-    # print(speed_map['PointList'].value)
-    # print(speed_map.count())
-    # print(speed_map.interpolation_def().name)
-    #
-    # for p in speed_map.points():
-    #     print("  ", float(p.time), float(p.value), p.edit_hint)
-    #     for prop in p.point_properties():
-    #         print("    ", prop.name, prop.value, float(prop.value))
-    #
-    # print(offset_map.interpolation_def().name)
-    # for p in offset_map.points():
-    #     edit_hint = p.edit_hint
-    #     time = p.time
-    #     value = p.value
-    #
-    #     pass
-    #     # print "  ", float(p.time), float(p.value)
-    #
-    # for i in range(100):
-    #     float(offset_map.value_at("%i/100" % i))
-    #
+
+    speed_map_points = speed_map.get('PointList')
+    print("Speed map:")
+    print(len(speed_map_points))
+    print(speed_map.interpolation.name)
+
+    for p in speed_map_points:
+        print("  ", float(p.time), float(p.value))
+        # for prop, val in p.point_properties:
+        #     print("    ", prop.name, prop.value, float(prop.value))
+
+    offset_map_points = speed_map.get('PointList')
+    print("Offset map:")
+    print(len(offset_map_points))
+    print(offset_map.interpolation.name)
+    
+    for p in offset_map_points:
+        print("  ", float(p.time), float(p.value))
+    
+    for i in range(item.length):
+        print(i, offset_map.value_at(i))
+
+    z = aaf2.misc.generate_offset_map(speed_map)
+    print(z)
+
     # # Test file PARAM_SPEED_MAP_U is AvidBezierInterpolator
     # # currently no implement for value_at
     # try:
@@ -665,12 +690,11 @@ def _transcribe_operation_group(item, metadata, editRate, masterMobs):
 
     if effect is not None:
         result.effects.append(effect)
-        effect.metadata = {
-            "AAF": {
-                "Operation": operation,
-                "Parameters": parameters
-            }
-        }
+
+        # Add some AAF-specific metadata (there might already be some)
+        effect.metadata.setdefault("AAF", {})
+        effect.metadata["AAF"]["Operation"] = operation
+        effect.metadata["AAF"]["Parameters"] = parameters
 
     for segment in item.getvalue("InputSegments"):
         child = _transcribe(segment, item, editRate, masterMobs)

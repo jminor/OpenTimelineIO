@@ -591,12 +591,14 @@ def _transcribe_fancy_timewarp(item, parameters):
     # frames.
     offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
     if offset_map:
-    lookup_table = []
-    for i in range(item.length):
-        lookup_table.append(int(offset_map.value_at(i)))
-    effect.metadata["AAF"] = {
-        "frame_remapping": lookup_table
-    }
+        lookup_table = []
+        length = item.length
+        for i in range(length):
+            lookup_table.append(int(0.5 + offset_map.value_at(float(i) / length)))
+        print(lookup_table)
+        effect.metadata["AAF"] = {
+            "frame_remapping": lookup_table
+        }
     else:
         pass
 
@@ -625,10 +627,10 @@ def _debug_time_effect(item, parameters):
     print("Offset map:")
     print(len(offset_map_points))
     print(offset_map.interpolation.name)
-    
+
     for p in offset_map_points:
         print("  ", float(p.time), float(p.value))
-    
+
     for i in range(item.length):
         print(i, offset_map.value_at(i))
 

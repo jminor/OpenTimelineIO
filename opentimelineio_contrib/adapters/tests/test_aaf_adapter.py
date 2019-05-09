@@ -130,6 +130,11 @@ GAPS_OTIO_PATH = os.path.join(
     SAMPLE_DATA_DIR,
     "gaps.otio"
 )
+NONLINEAR_TIMEWARPS_PATH = os.path.join(
+    SAMPLE_DATA_DIR,
+    "nonlinear_timewarps.aaf"
+)
+
 
 try:
     lib_path = os.environ.get("OTIO_AAF_PYTHON_LIB")
@@ -759,6 +764,85 @@ class AAFReaderTests(unittest.TestCase):
         self.assertEqual(16, clip.duration().value)
         # TODO: We don't yet support non-linear time warps, but when we
         # do then this effect is a "Speed Bump" from 166% to 44% to 166%
+
+    def test_read_nonlinear_timewarps(self):
+        timeline = otio.adapters.read_from_file(
+            NONLINEAR_TIMEWARPS_PATH
+        )
+
+        # This AAF has 9 clips, each of which is 49 frames long.
+        self.assertEqual(1, len(timeline.tracks))
+        track = timeline.tracks[0]
+        self.assertEqual(10, len(track))
+
+        # clip 0: no effects => frames 0-48
+        clip = track[0]
+        self.assertEqual(0, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        expected_frames = range(49)  # 0-48
+
+        # clip 1: reverse (-100% rate) => frames 48-0
+        clip = track[1]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.LinearTimeWarp, type(effect))
+        self.assertEqual(-1, effect.time_scalar)
+        # TODO: If we had API to compute the frame_remapping from *any* effect, we could test it here.
+        # self.assertEqual(None, effect.metadata.get("AAF",{}).get("frame_remapping"))
+        expected_frames = reversed(range(49))  # 48-0
+
+        # clip 2: 0% to 100% ramp up => frames 0-23
+        clip = track[2]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        self.assertCloseEnough(
+            [
+                0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,1,1,1,1,2,
+                2,2,3,3,4,4,5,5,6,7,
+                7,8,9,9,10,11,12,13,14,15,
+                16,17,17,18,19,20,21,22,23
+            ],
+            effect.metadata.get("AAF", {}).get("frame_remapping"),
+            1
+        )
+
+        # clip 3: 100% to 0% ramp down => frames 23-48
+        clip = track[3]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        self.assertCloseEnough(
+            [
+                23,24,25,26,27,28,29,30,31,32,
+                33,34,35,36,37,37,38,39,40,40,
+                41,42,42,43,43,44,44,45,45,45,
+                46,46,46,46,47,47,47,47,47,47,
+                47,47,47,47,47,47,47,47,48
+            ],
+            effect.metadata.get("AAF", {}).get("frame_remapping"),
+            2
+        )
+
+        # clip 4: Speed Boost => frames 0-48
+        # clip 5: Speed Bump => frames 0-48
+        # clip 6: Speed spline 100% to 200% to -100% to 0% to 50% to -200% => frames 0-18-2 (start=0, end=2) (min-max 0-18)
+        # clip 7: Position spline with keys at output frame 0, 24, 9, 37, 14, 24 (min-max 0-37)
+        # clip 8: Position steps with keys at output frame 14, 19, 5, 30, 38 (min-max 5-38)
+
+
+    def assertCloseEnough(self, desired, actual, epsilon):
+        self.assertEqual(len(desired), len(actual))
+        delta = [a - b for a, b in zip(desired, actual)]
+        for a, b, d in zip(desired, actual, delta):
+            if abs(d) > epsilon:
+                self.maxDiff = None
+                print("ZIP: {}".format([z for z in zip(desired, actual, delta)]))
+                self.assertEqual(desired, actual, "Element {} more than {} from {}".format(a,epsilon,b))
 
     def test_muted_clip(self):
         sc = otio.adapters.read_from_file(MUTED_CLIP_PATH, simplify=False)

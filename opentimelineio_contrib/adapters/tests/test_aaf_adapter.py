@@ -773,76 +773,249 @@ class AAFReaderTests(unittest.TestCase):
         # This AAF has 9 clips, each of which is 49 frames long.
         self.assertEqual(1, len(timeline.tracks))
         track = timeline.tracks[0]
-        self.assertEqual(10, len(track))
+        self.assertEqual(9, len(track))
+        self.assertEqual(9 * 49, track.duration().value)
 
         # clip 0: no effects => frames 0-48
         clip = track[0]
         self.assertEqual(0, len(clip.effects))
         self.assertEqual(49, clip.duration().value)
-        expected_frames = range(49)  # 0-48
+        # TODO: If we had API to compute the frame_remapping from *any* effect,
+        # then we could test it here.
+        # expected_frames = range(49)  # 0-48
+        # remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+        # self.assertEqual(expected_frames, remapping)
 
         # clip 1: reverse (-100% rate) => frames 48-0
+        # In Media Composer, this has 1 spline keyframe on the speed graph
         clip = track[1]
         self.assertEqual(1, len(clip.effects))
         self.assertEqual(49, clip.duration().value)
         effect = clip.effects[0]
         self.assertEqual(otio.schema.LinearTimeWarp, type(effect))
         self.assertEqual(-1, effect.time_scalar)
-        # TODO: If we had API to compute the frame_remapping from *any* effect, we could test it here.
-        # self.assertEqual(None, effect.metadata.get("AAF",{}).get("frame_remapping"))
-        expected_frames = reversed(range(49))  # 48-0
+        # TODO: If we had API to compute the frame_remapping from *any* effect,
+        # then we could test it here.
+        # expected_frames = reversed(range(49))  # 48-0
+        # remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+        # self.assertEqual(expected_frames, remapping)
 
         # clip 2: 0% to 100% ramp up => frames 0-23
+        # In Media Composer, this has 2 spline keyframes on the speed graph
         clip = track[2]
         self.assertEqual(1, len(clip.effects))
         self.assertEqual(49, clip.duration().value)
         effect = clip.effects[0]
         self.assertEqual(otio.schema.TimeEffect, type(effect))
-        self.assertCloseEnough(
-            [
-                0,0,0,0,0,0,0,0,0,0,
-                0,0,0,0,0,1,1,1,1,2,
-                2,2,3,3,4,4,5,5,6,7,
-                7,8,9,9,10,11,12,13,14,15,
-                16,17,17,18,19,20,21,22,23
-            ],
-            effect.metadata.get("AAF", {}).get("frame_remapping"),
-            1
-        )
+        expected_frames = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 1, 1, 1, 2,
+            2, 2, 3, 3, 4, 4, 5, 5, 6, 7,
+            7, 8, 9, 9, 10, 11, 12, 13, 14, 15,
+            16, 17, 17, 18, 19, 20, 21, 22, 23
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 2: 0% to 100% ramp up')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        self.assertCloseEnough(expected_frames, remapping, 1)
 
         # clip 3: 100% to 0% ramp down => frames 23-48
+        # In Media Composer, this has 2 spline keyframes on the speed graph
         clip = track[3]
         self.assertEqual(1, len(clip.effects))
         self.assertEqual(49, clip.duration().value)
         effect = clip.effects[0]
         self.assertEqual(otio.schema.TimeEffect, type(effect))
-        self.assertCloseEnough(
-            [
-                23,24,25,26,27,28,29,30,31,32,
-                33,34,35,36,37,37,38,39,40,40,
-                41,42,42,43,43,44,44,45,45,45,
-                46,46,46,46,47,47,47,47,47,47,
-                47,47,47,47,47,47,47,47,48
-            ],
-            effect.metadata.get("AAF", {}).get("frame_remapping"),
-            2
-        )
+        expected_frames = [
+            23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+            33, 34, 35, 36, 37, 37, 38, 39, 40, 40,
+            41, 42, 42, 43, 43, 44, 44, 45, 45, 45,
+            46, 46, 46, 46, 47, 47, 47, 47, 47, 47,
+            47, 47, 47, 47, 47, 47, 47, 47, 48
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 3: 100% to 0% ramp down')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        self.assertCloseEnough(expected_frames, remapping, 1)
 
         # clip 4: Speed Boost => frames 0-48
+        # In Media Composer, this has 4 spline keyframes on the position graph
+        clip = track[4]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+        expected_frames = [
+            0, 0, 1, 1, 2, 2, 3, 3, 4, 4,
+            5, 5, 6, 6, 7, 7, 9, 10, 11, 13,
+            15, 17, 19, 21, 24, 26, 28, 30, 32, 34,
+            36, 37, 38, 40, 40, 41, 42, 42, 42, 43,
+            43, 44, 44, 45, 45, 46, 46, 47, 48
+        ]
+
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 4: Speed Boost')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        self.assertEqual(49, len(remapping))
+        self.assertEqual(0, min(remapping))
+        self.assertEqual(0, remapping[0])
+        self.assertEqual(48, max(remapping))
+        self.assertEqual(48, remapping[-1])
+        self.assertCloseEnough(expected_frames, remapping, 1)
+
         # clip 5: Speed Bump => frames 0-48
-        # clip 6: Speed spline 100% to 200% to -100% to 0% to 50% to -200% => frames 0-18-2 (start=0, end=2) (min-max 0-18)
-        # clip 7: Position spline with keys at output frame 0, 24, 9, 37, 14, 24 (min-max 0-37)
-        # clip 8: Position steps with keys at output frame 14, 19, 5, 30, 38 (min-max 5-38)
+        # In Media Composer, this has 4 spline keyframes on the position graph
+        clip = track[5]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        expected_frames = [
+            0, 1, 3, 4, 6, 8, 10, 12, 13, 15,
+            16, 17, 18, 18, 19, 19, 20, 20, 21, 21,
+            22, 22, 23, 23, 24, 24, 24, 25, 25, 26,
+            26, 27, 27, 28, 28, 29, 30, 30, 31, 32,
+            34, 35, 37, 39, 41, 43, 44, 46, 48
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
 
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 5: Speed Bump')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
 
-    def assertCloseEnough(self, desired, actual, epsilon):
-        self.assertEqual(len(desired), len(actual))
-        delta = [a - b for a, b in zip(desired, actual)]
-        for a, b, d in zip(desired, actual, delta):
+        self.assertEqual(49, len(remapping))
+        self.assertEqual(0, min(remapping))
+        self.assertEqual(0, remapping[0])
+        self.assertEqual(48, max(remapping))
+        self.assertEqual(48, remapping[-1])
+        self.assertCloseEnough(expected_frames, remapping, 3)
+
+        # clip 6: Speed spline 100% to 200% to -100% to 0% to 50% to -200%
+        # => frames 0-18-2 (start=0, end=2) (min-max 0-18)
+        # In Media Composer, this has 6 spline keyframes on the speed graph
+        clip = track[6]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        expected_frames = [
+            0, 1, 2, 3, 4, 6, 8, 9, 11, 13,
+            15, 17, 17, 18, 17, 17, 16, 15, 14, 13,
+            12, 12, 11, 11, 11, 11, 11, 12, 12, 12,
+            13, 13, 14, 14, 15, 15, 15, 15, 15, 15,
+            14, 13, 12, 10, 8, 6, 4, 2, 0
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 6: Speed spline 100% to 200% to -100% to 0% to 50% to -200%')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        # self.assertEqual(49, len(remapping))
+        # self.assertEqual(0, min(remapping))
+        # self.assertEqual(0, remapping[0])
+        # self.assertEqual(18, max(remapping))
+        # self.assertEqual(2, remapping[-1])
+        # self.assertCloseEnough(expected_frames, remapping, 1)
+
+        # clip 7: Position spline with keys at output frame 0, 24, 9, 37, 14, 24
+        # (min-max 0-37)
+        # In Media Composer, this has 5 bezier keyframes on the position graph
+        clip = track[7]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        expected_frames = [
+            0, 3, 7, 11, 15, 19, 21, 23, 24, 23,
+            21, 19, 16, 13, 10, 9, 9, 9, 9, 10,
+            11, 12, 13, 14, 16, 19, 24, 37, 37, 37,
+            36, 35, 33, 32, 29, 16, 14, 15, 15, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 7: Position spline with keys at output frame 0, 24, 9, 37, 14, 24')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        # self.assertEqual(49, len(remapping))
+        # self.assertEqual(0, min(remapping))
+        # self.assertEqual(0, remapping[0])
+        # self.assertEqual(37, max(remapping))
+        # self.assertEqual(24, remapping[-1])
+        # self.assertCloseEnough(expected_frames, remapping, 1)
+
+        # clip 8: Position steps with keys at output frame 14, 19, 5, 30, 38
+        # (min-max 5-38)
+        # In Media Composer, this has 5 shelf keyframes on the position graph
+        clip = track[8]
+        self.assertEqual(1, len(clip.effects))
+        self.assertEqual(49, clip.duration().value)
+        effect = clip.effects[0]
+        self.assertEqual(otio.schema.TimeEffect, type(effect))
+        expected_frames = [
+            14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+            19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19,
+            5, 5, 5, 5, 5, 5,
+            30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+            38
+        ]
+        remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
+
+        x = range(len(expected_frames))
+        plt.plot(x, expected_frames, 'g-', x, remapping, 'r-')
+        plt.title('Clip 8: Position steps with keys at output frame 14, 19, 5, 30, 38')
+        plt.ylabel('input frame')
+        plt.xlabel('output frame')
+        plt.show()
+
+        self.assertEqual(49, len(remapping))
+        self.assertEqual(5, min(remapping))
+        self.assertEqual(14, remapping[0])
+        self.assertEqual(38, max(remapping))
+        self.assertEqual(38, remapping[-1])
+        self.assertCloseEnough(expected_frames, remapping, 1)
+
+        # TODO: Add another clip with linear keyframes
+        # TODO: Test elastic vs fixed keyframes?
+
+    def assertCloseEnough(self, expected, actual, epsilon):
+        self.assertEqual(len(expected), len(actual))
+        delta = [a - b for a, b in zip(expected, actual)]
+        for a, b, d in zip(expected, actual, delta):
             if abs(d) > epsilon:
                 self.maxDiff = None
-                print("ZIP: {}".format([z for z in zip(desired, actual, delta)]))
-                self.assertEqual(desired, actual, "Element {} more than {} from {}".format(a,epsilon,b))
+                print("ZIP: {}".format([z for z in zip(expected, actual, delta)]))
+                self.assertEqual(expected, actual, "Element {} more than {} from {}".format(a,epsilon,b))
 
     def test_muted_clip(self):
         sc = otio.adapters.read_from_file(MUTED_CLIP_PATH, simplify=False)

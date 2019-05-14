@@ -534,13 +534,13 @@ def _transcribe_linear_timewarp(item, parameters):
     # this is a linear time warp
     effect = otio.schema.LinearTimeWarp()
 
-    offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
+    speed_offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
 
     # If we have a LinearInterp with just 2 control points, then
     # we can compute the time_scalar. Note that the SpeedRatio is
     # NOT correct in many AAFs - we aren't sure why, but luckily we
     # can compute the correct value this way.
-    points = offset_map.get("PointList")
+    points = speed_offset_map.get("PointList")
     if len(points) > 2:
         # This is something complicated... try the fancy version
         return _transcribe_fancy_timewarp(item, parameters)
@@ -549,6 +549,8 @@ def _transcribe_linear_timewarp(item, parameters):
         and float(points[0].time) == 0
         and float(points[0].value) == 0
     ):
+        # TODO: We should also look at the time for BOTH points to make
+        # sure they are at the start and end of the clip.
         # With just two points, we can compute the slope
         effect.time_scalar = float(points[1].value) / float(points[1].time)
     else:
@@ -589,18 +591,62 @@ def _transcribe_fancy_timewarp(item, parameters):
     # Rather than trying to capture all that complexity, lets
     # just get a lookup table that maps output frames to input
     # frames.
-    offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
-    if offset_map:
+    speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
+    speed_offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
+    offset_map = _get_parameter(item, 'PARAM_OFFSET_MAP_U')
+
+    print("speed_map = {}".format(speed_map))
+    print("speed_offset_map = {}".format(speed_offset_map))
+    print("offset_map = {}".format(offset_map))
+
+    if speed_offset_map:
+        lookup_table = []
+        length = item.length
+        for i in range(length):
+            lookup_table.append(int(0.5 + speed_offset_map.value_at(float(i) / length)))
+        start = item.segments[0].components[0].start
+        remapping = [i + start for i in lookup_table]
+        # print(lookup_table)
+        print("A1: {}".format(remapping))
+
+        z = aaf2.misc.generate_offset_map(speed_offset_map)
+        print("A2: {}".format(z))
+
+        effect.metadata["AAF"] = {
+            "frame_remapping": remapping
+        }
+    elif offset_map:
         lookup_table = []
         length = item.length
         for i in range(length):
             lookup_table.append(int(0.5 + offset_map.value_at(float(i) / length)))
-        print(lookup_table)
+        start = item.segments[0].components[0].start
+        remapping = [i + start for i in lookup_table]
+        # print(lookup_table)
+        # print(remapping)
+        print("B1: {}".format(remapping))
+
+        z = aaf2.misc.generate_offset_map(offset_map)
+        print("B2: {}".format(z))
+
         effect.metadata["AAF"] = {
-            "frame_remapping": lookup_table
+            "frame_remapping": remapping
         }
+
+        #_debug_time_effect(item, parameters)
+    elif speed_map:
+
+        print("C1: {}".format(remapping))
+
+        z = aaf2.misc.generate_offset_map(speed_map)
+        print("C2: {}".format(z))
+
+        _debug_time_effect(item, parameters)
     else:
-        pass
+        _debug_time_effect(item, parameters)
+        effect.metadata["AAF"] = {
+            "debug": "unsupported timewarp effect?"
+        }
 
     return effect
 
@@ -612,30 +658,34 @@ def _debug_time_effect(item, parameters):
     speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
     offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
     # Also? PARAM_OFFSET_MAP_U (without the word "SPEED" in it?)
+    other_map = _get_parameter(item, 'PARAM_OFFSET_MAP_U')
 
-    speed_map_points = speed_map.get('PointList')
-    print("Speed map:")
-    print(len(speed_map_points))
-    print(speed_map.interpolation.name)
+    if speed_map:
+        speed_map_points = speed_map.get('PointList')
+        print("Speed map:")
+        print(len(speed_map_points))
+        print(speed_map.interpolation.name)
 
-    for p in speed_map_points:
-        print("  ", float(p.time), float(p.value))
-        # for prop, val in p.point_properties:
-        #     print("    ", prop.name, prop.value, float(prop.value))
+        for p in speed_map_points:
+            print("  ", float(p.time), float(p.value))
+            # for prop, val in p.point_properties:
+            #     print("    ", prop.name, prop.value, float(prop.value))
 
-    offset_map_points = speed_map.get('PointList')
-    print("Offset map:")
-    print(len(offset_map_points))
-    print(offset_map.interpolation.name)
+        z = aaf2.misc.generate_offset_map(speed_map)
+        print(z)
 
-    for p in offset_map_points:
-        print("  ", float(p.time), float(p.value))
+    if offset_map:
+        offset_map_points = offset_map.get('PointList')
+        print("Offset map:")
+        print(len(offset_map_points))
+        print(offset_map.interpolation.name)
 
-    for i in range(item.length):
-        print(i, offset_map.value_at(i))
+        for p in offset_map_points:
+            print("  ", float(p.time), float(p.value))
 
-    z = aaf2.misc.generate_offset_map(speed_map)
-    print(z)
+        for i in range(item.length):
+            print(i, offset_map.value_at(i))
+
 
     # # Test file PARAM_SPEED_MAP_U is AvidBezierInterpolator
     # # currently no implement for value_at

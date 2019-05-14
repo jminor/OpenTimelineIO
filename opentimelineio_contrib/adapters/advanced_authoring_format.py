@@ -575,6 +575,20 @@ def _transcribe_linear_timewarp(item, parameters):
 
     return effect
 
+def _extract_frame_list(item, mapping):
+    frame_list = []
+    length = item.length
+    start = item.segments[0].components[0].start
+    times = [p.time for p in mapping['PointList'].value]
+    min_time = min(times)
+    max_time = max(times)
+    time_span = max_time - min_time
+    for i in range(length):
+        time = (float(i)/length) * time_span + min_time
+        value = mapping.value_at(time)
+        frame = int(value) + start
+        frame_list.append(frame)
+    return frame_list
 
 def _transcribe_fancy_timewarp(item, parameters):
 
@@ -582,6 +596,7 @@ def _transcribe_fancy_timewarp(item, parameters):
     effect = otio.schema.TimeEffect()
     effect.effect_name = None  # Unsupported
     effect.name = item.get("Name")
+    effect.metadata.setdefault("AAF", {})
 
     # self._debug_time_effect(item, parameters)
 
@@ -591,63 +606,45 @@ def _transcribe_fancy_timewarp(item, parameters):
     # Rather than trying to capture all that complexity, lets
     # just get a lookup table that maps output frames to input
     # frames.
-    speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
     speed_offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
+    speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
     offset_map = _get_parameter(item, 'PARAM_OFFSET_MAP_U')
 
-    print("speed_map = {}".format(speed_map))
-    print("speed_offset_map = {}".format(speed_offset_map))
-    print("offset_map = {}".format(offset_map))
+    frame_list = None
 
+    # The speed_offset_map has the most useful & complete set of information in it.
+    # When it is present, it has a dense list of control points that map time 0-1 
+    # to value in frames. Sometimes there are a few time values above 1.0?
+    # However, sometimes the time axis is in frames instead of 0-1.
+    # To deal with this variation in the time axis, we look for the min/max time
+    # and stretch the time sampling to match.
     if speed_offset_map:
-        lookup_table = []
-        length = item.length
-        for i in range(length):
-            lookup_table.append(int(0.5 + speed_offset_map.value_at(float(i) / length)))
-        start = item.segments[0].components[0].start
-        remapping = [i + start for i in lookup_table]
-        # print(lookup_table)
-        print("A1: {}".format(remapping))
-
-        z = aaf2.misc.generate_offset_map(speed_offset_map)
-        print("A2: {}".format(z))
-
-        effect.metadata["AAF"] = {
-            "frame_remapping": remapping
-        }
+        frame_list = _extract_frame_list(item, speed_offset_map)
+    
+    # The offset_map contains just the control points (aka knots or keyframes)
+    # that were authored by the user. We rely on pyaaf2's math to calculate values
+    # based on the type of interpolation used.
     elif offset_map:
-        lookup_table = []
-        length = item.length
-        for i in range(length):
-            lookup_table.append(int(0.5 + offset_map.value_at(float(i) / length)))
-        start = item.segments[0].components[0].start
-        remapping = [i + start for i in lookup_table]
-        # print(lookup_table)
-        # print(remapping)
-        print("B1: {}".format(remapping))
+        frame_list = _extract_frame_list(item, offset_map)
 
-        z = aaf2.misc.generate_offset_map(offset_map)
-        print("B2: {}".format(z))
-
-        effect.metadata["AAF"] = {
-            "frame_remapping": remapping
-        }
-
-        #_debug_time_effect(item, parameters)
+    # Speed map is our last resort. It sometimes appears along with the others
+    # handled above, but seems to have incomplete or invalid data in it.
+    # When we find it all by itself, then we can attempt to use it.
     elif speed_map:
+        frame_list = _extract_frame_list(item, speed_map)
 
-        print("C1: {}".format(remapping))
-
-        z = aaf2.misc.generate_offset_map(speed_map)
-        print("C2: {}".format(z))
-
-        _debug_time_effect(item, parameters)
     else:
         _debug_time_effect(item, parameters)
-        effect.metadata["AAF"] = {
-            "debug": "unsupported timewarp effect?"
-        }
+        effect.metadata["AAF"]["debug"] = "unsupported timewarp effect?"
 
+    effect.metadata["AAF"]["frame_remapping"] = frame_list
+    effect.metadata["AAF"].setdefault("debug2", {})
+    if speed_map:
+        effect.metadata["AAF"]["debug2"]["speed_map_points"] = [(p.time, p.value) for p in speed_map['PointList'].value]
+    if speed_offset_map:
+        effect.metadata["AAF"]["debug2"]["speed_offset_map_points"] = [(p.time, p.value) for p in speed_offset_map['PointList'].value]
+    if offset_map:
+        effect.metadata["AAF"]["debug2"]["offset_map_points"] = [(p.time, p.value) for p in offset_map['PointList'].value]
     return effect
 
 

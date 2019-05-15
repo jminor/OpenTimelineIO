@@ -815,7 +815,6 @@ class AAFReaderTests(unittest.TestCase):
             16, 17, 17, 18, 19, 20, 21, 22, 23
         ]
         remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
-        self.assertCloseEnough(expected_frames, remapping, 0)
         self.assertEqual(expected_frames, remapping)
 
         # clip 3: 100% to 0% ramp down => frames 23-48
@@ -833,7 +832,6 @@ class AAFReaderTests(unittest.TestCase):
             47, 47, 47, 47, 47, 47, 47, 47, 48
         ]
         remapping = effect.metadata.get("AAF", {}).get("frame_remapping")
-        self.assertCloseEnough(expected_frames, remapping, 1)
         self.assertEqual(expected_frames, remapping)
 
         # clip 4: Speed Boost => frames 0-48
@@ -903,8 +901,8 @@ class AAFReaderTests(unittest.TestCase):
         self.assertEqual(0, remapping[0])
         self.assertEqual(18, max(remapping))
         self.assertEqual(0, remapping[-1])
-        self.assertCloseEnough(expected_frames, remapping, 1)
-        # self.assertEqual(expected_frames, remapping)
+        # self.assertCloseEnough(expected_frames, remapping, 1)
+        self.assertEqual(expected_frames, remapping)
 
         # clip 7: Position spline with keys at output frame 0, 24, 9, 37, 14, 24
         # (min-max 0-37)
@@ -925,8 +923,8 @@ class AAFReaderTests(unittest.TestCase):
         self.assertEqual(49, len(remapping))
         self.assertEqual(0, min(remapping))
         self.assertEqual(0, remapping[0])
-        # self.assertEqual(37, max(remapping))
-        # self.assertEqual(24, remapping[-1])
+        self.assertEqual(37, max(remapping))
+        self.assertEqual(24, remapping[-1])
         self.assertCloseEnough(expected_frames, remapping, 20)
         # self.assertEqual(expected_frames, remapping)
 
@@ -949,10 +947,10 @@ class AAFReaderTests(unittest.TestCase):
         self.assertEqual(49, len(remapping))
         self.assertEqual(5, min(remapping))
         self.assertEqual(14, remapping[0])
-        # self.assertEqual(38, max(remapping))
-        # self.assertEqual(38, remapping[-1])
+        self.assertEqual(38, max(remapping))
+        self.assertEqual(38, remapping[-1])
         # self.assertCloseEnough(expected_frames, remapping, 1)
-        # self.assertEqual(expected_frames, remapping)
+        self.assertEqual(expected_frames, remapping)
 
         # TODO: Add another clip with linear keyframes
         # TODO: Test elastic vs fixed keyframes?

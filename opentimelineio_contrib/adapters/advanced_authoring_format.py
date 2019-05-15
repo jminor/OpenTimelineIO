@@ -580,8 +580,25 @@ def _extract_frame_list(item, mapping):
     length = item.length
     start = item.segments[0].components[0].start
     times = [p.time for p in mapping['PointList'].value]
-    min_time = min(times)
-    max_time = max(times)
+    hints = [p['EditHint'].value for p in mapping['PointList'].value]
+    hints = list(set(hints))  # find unique set of hints
+    if hints == [u'Proportional']:
+        # I would expect the times to range from 0 to 1,
+        # but they sometimes include values slightly above 1.
+        # In comparing to Avid Media Composer, using min-max
+        # instead of 0-1 produces a better match.
+        # min_time = 0
+        # max_time = 1
+        min_time = min(times)
+        max_time = max(times)
+    elif hints == [u'RelativeFixed']:
+        # keyframe times are in frames
+        min_time = 0
+        max_time = length
+    else:
+        # guess
+        min_time = min(times)
+        max_time = max(times)
     time_span = max_time - min_time
     for i in range(length):
         time = (float(i)/length) * time_span + min_time

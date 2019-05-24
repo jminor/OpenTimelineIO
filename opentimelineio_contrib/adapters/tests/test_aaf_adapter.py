@@ -962,7 +962,11 @@ class AAFReaderTests(unittest.TestCase):
             if abs(d) > epsilon:
                 self.maxDiff = None
                 # print("ZIP: {}".format([z for z in zip(expected, actual, delta)]))
-                self.assertEqual(expected, actual, "Element {} more than {} from {}".format(a,epsilon,b))
+                self.assertEqual(
+                    expected,
+                    actual,
+                    "Element {} more than {} from {}".format(a, epsilon, b)
+                )
 
     def test_muted_clip(self):
         sc = otio.adapters.read_from_file(MUTED_CLIP_PATH, simplify=False)

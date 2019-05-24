@@ -575,6 +575,7 @@ def _transcribe_linear_timewarp(item, parameters):
 
     return effect
 
+
 def _extract_frame_list(item, mapping):
     frame_list = []
     length = item.length
@@ -601,11 +602,12 @@ def _extract_frame_list(item, mapping):
         max_time = max(times)
     time_span = max_time - min_time
     for i in range(length):
-        time = (float(i)/length) * time_span + min_time
+        time = (float(i) / length) * time_span + min_time
         value = mapping.value_at(time)
         frame = int(value) + start
         frame_list.append(frame)
     return frame_list
+
 
 def _transcribe_fancy_timewarp(item, parameters):
 
@@ -630,14 +632,14 @@ def _transcribe_fancy_timewarp(item, parameters):
     frame_list = None
 
     # The speed_offset_map has the most useful & complete set of information in it.
-    # When it is present, it has a dense list of control points that map time 0-1 
+    # When it is present, it has a dense list of control points that map time 0-1
     # to value in frames. Sometimes there are a few time values above 1.0?
     # However, sometimes the time axis is in frames instead of 0-1.
     # To deal with this variation in the time axis, we look for the min/max time
     # and stretch the time sampling to match.
     if speed_offset_map:
         frame_list = _extract_frame_list(item, speed_offset_map)
-    
+
     # The offset_map contains just the control points (aka knots or keyframes)
     # that were authored by the user. We rely on pyaaf2's math to calculate values
     # based on the type of interpolation used.
@@ -657,11 +659,17 @@ def _transcribe_fancy_timewarp(item, parameters):
     effect.metadata["AAF"]["frame_remapping"] = frame_list
     effect.metadata["AAF"].setdefault("debug2", {})
     if speed_map:
-        effect.metadata["AAF"]["debug2"]["speed_map_points"] = [(p.time, p.value) for p in speed_map['PointList'].value]
+        effect.metadata["AAF"]["debug2"]["speed_map_points"] = [
+            (p.time, p.value) for p in speed_map['PointList'].value
+        ]
     if speed_offset_map:
-        effect.metadata["AAF"]["debug2"]["speed_offset_map_points"] = [(p.time, p.value) for p in speed_offset_map['PointList'].value]
+        effect.metadata["AAF"]["debug2"]["speed_offset_map_points"] = [
+            (p.time, p.value) for p in speed_offset_map['PointList'].value
+        ]
     if offset_map:
-        effect.metadata["AAF"]["debug2"]["offset_map_points"] = [(p.time, p.value) for p in offset_map['PointList'].value]
+        effect.metadata["AAF"]["debug2"]["offset_map_points"] = [
+            (p.time, p.value) for p in offset_map['PointList'].value
+        ]
     return effect
 
 
@@ -672,7 +680,7 @@ def _debug_time_effect(item, parameters):
     speed_map = _get_parameter(item, 'PARAM_SPEED_MAP_U')
     offset_map = _get_parameter(item, 'PARAM_SPEED_OFFSET_MAP_U')
     # Also? PARAM_OFFSET_MAP_U (without the word "SPEED" in it?)
-    other_map = _get_parameter(item, 'PARAM_OFFSET_MAP_U')
+    # other_map = _get_parameter(item, 'PARAM_OFFSET_MAP_U')
 
     if speed_map:
         speed_map_points = speed_map.get('PointList')
@@ -699,7 +707,6 @@ def _debug_time_effect(item, parameters):
 
         for i in range(item.length):
             print(i, offset_map.value_at(i))
-
 
     # # Test file PARAM_SPEED_MAP_U is AvidBezierInterpolator
     # # currently no implement for value_at

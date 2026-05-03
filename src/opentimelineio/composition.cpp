@@ -156,19 +156,18 @@ Composition::remove_child(int index, ErrorStatus* error_status)
 
     index = adjusted_vector_index(index, _children);
 
-    _child_set.erase(_children[index]);
+    if (static_cast<size_t>(index) >= _children.size() || index < 0)
+    {
+        if (error_status)
+        {
+            *error_status = ErrorStatus::ILLEGAL_INDEX;
+        }
+        return false;
+    }
 
-    if (size_t(index) >= _children.size())
-    {
-        _children.back()->_set_parent(nullptr);
-        _children.pop_back();
-    }
-    else
-    {
-        index = std::max(index, 0);
-        _children[index]->_set_parent(nullptr);
-        _children.erase(_children.begin() + index);
-    }
+    _child_set.erase(_children[index]);
+    _children[index]->_set_parent(nullptr);
+    _children.erase(_children.begin() + index);
 
     return true;
 }
